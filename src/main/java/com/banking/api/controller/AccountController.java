@@ -2,9 +2,12 @@ package com.banking.api.controller;
 
 import com.banking.api.dto.TransactionRequest;
 import com.banking.api.model.Account;
+import com.banking.api.repository.AccountRepository;
+import com.banking.api.repository.UserRepository;
 import com.banking.api.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -14,10 +17,23 @@ import java.util.Map;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
+
+    @GetMapping("/my")
+    public ResponseEntity<?> myAccounts(Authentication auth) {
+        var user = userRepository.findByUsername(auth.getName()).orElseThrow();
+        return ResponseEntity.ok(accountRepository.findByUserId(user.getId()));
+    }
 
     @GetMapping("/{accountNumber}/balance")
     public ResponseEntity<?> balance(@PathVariable String accountNumber) {
         return ResponseEntity.ok(Map.of("accountNumber", accountNumber, "balance", accountService.getBalance(accountNumber)));
+    }
+
+    @GetMapping("/{accountNumber}/transactions")
+    public ResponseEntity<?> history(@PathVariable String accountNumber) {
+        return ResponseEntity.ok(accountService.getHistory(accountNumber));
     }
 
     @PostMapping("/deposit")

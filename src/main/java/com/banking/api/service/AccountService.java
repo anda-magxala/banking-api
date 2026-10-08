@@ -1,19 +1,21 @@
 package com.banking.api.service;
 
 import com.banking.api.model.Account;
+import com.banking.api.model.Transaction;
 import com.banking.api.repository.AccountRepository;
-import com.banking.api.repository.UserRepository;
+import com.banking.api.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     public Account getAccount(String accountNumber) {
         return accountRepository.findByAccountNumber(accountNumber)
@@ -28,7 +30,9 @@ public class AccountService {
     public Account deposit(String accountNumber, BigDecimal amount) {
         Account acc = getAccount(accountNumber);
         acc.setBalance(acc.getBalance().add(amount));
-        return accountRepository.save(acc);
+        accountRepository.save(acc);
+        transactionRepository.save(new Transaction(null, accountNumber, "DEPOSIT", amount, "Deposit to " + accountNumber));
+        return acc;
     }
 
     @Transactional
@@ -36,7 +40,9 @@ public class AccountService {
         Account acc = getAccount(accountNumber);
         if (acc.getBalance().compareTo(amount) < 0) throw new RuntimeException("Insufficient funds");
         acc.setBalance(acc.getBalance().subtract(amount));
-        return accountRepository.save(acc);
+        accountRepository.save(acc);
+        transactionRepository.save(new Transaction(accountNumber, null, "WITHDRAW", amount, "Withdraw from " + accountNumber));
+        return acc;
     }
 
     @Transactional
@@ -48,5 +54,11 @@ public class AccountService {
         toAcc.setBalance(toAcc.getBalance().add(amount));
         accountRepository.save(fromAcc);
         accountRepository.save(toAcc);
+        transactionRepository.save(new Transaction(from, to, "TRANSFER", amount, "Transfer from " + from + " to " + to));
+    }
+
+    public List<Transaction> getHistory(String accountNumber) {
+        getAccount(accountNumber); // validate exists
+        return transactionRepository.findByFromAccountOrToAccountOrderByTimestampDesc(accountNumber, accountNumber);
     }
 }
