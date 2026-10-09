@@ -17,3 +17,5 @@ Java 21 • Spring Boot 3 • Spring Security • JWT • MySQL/H2 • Maven •
 ```bash
 ./mvnw spring-boot:run
 # API runs at http://localhost:8080
+
+LIVE DEMO: https://banking-api-jk4t.onrender.com
